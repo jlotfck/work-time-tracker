@@ -31,9 +31,11 @@ main() {
 
       # Check if the formatted date is greater than or equal to the last Monday
       if [[ "$formated_date" > "$last_monday" || "$formated_date" == "$last_monday" ]]; then
+        adjustment_value=0
         # Only add a working day when the entry is a different date
         if [[ "$last_date" != "$formated_date" ]]; then
           ((working_days++))
+          adjustment_value=$(getAdjustment "$formated_date")
         fi
 
         # set current date to last date to compare in the next iteration
@@ -48,10 +50,13 @@ main() {
           seconds=$(get_seconds_from_uptime)
         fi
 
-         # Update work time for today when the date is the current date
-         if [[ "$formated_date" == "$current_date" ]]; then
-           work_time_today=$((seconds + work_time_today))
-         fi
+        # Add adjustment value from file to seconds
+        seconds=$((seconds + $adjustment_value))
+
+        # Update work time for today when the date is the current date
+        if [[ "$formated_date" == "$current_date" ]]; then
+          work_time_today=$((seconds + work_time_today))
+        fi
 
         # Add the work time of the day to the total work time
         work_time_week=$((work_time_week + seconds))
