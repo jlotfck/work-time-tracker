@@ -44,10 +44,9 @@ main() {
         # Extract the seconds of the session from the line
         seconds=$(echo "$line" | awk -F '[()]' '{print $2+0}')
 
-        # If no session time is provided (seconds = 0), use seconds from uptime command
+        # If no session time is provided (seconds = 0), compute seconds since start time
         if [ "$seconds" -eq 0 ]; then
-          # Use uptime command to get the work time in seconds
-          seconds=$(get_seconds_from_uptime)
+          seconds=$(compute_seconds_since_start "$line" "$formated_date")
         fi
 
         # Add adjustment value from file to seconds

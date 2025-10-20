@@ -134,3 +134,42 @@ parse_time_to_seconds() {
   # Apply sign and return
   echo $((sign * seconds))
 }
+
+# Compute seconds since session start based on a line from `last` and a formatted date (YYYY-MM-DD).
+# Falls back to uptime if time cannot be derived. Ensures non-negative result.
+compute_seconds_since_start() {
+  local line="$1"
+  local formatted_date="$2"
+
+  # Try to extract the session start time (HH:MM) from the line
+  local start_time
+  start_time=$(echo "$line" | grep -Eo '[0-9]{1,2}:[0-9]{2}' | head -n1)
+
+  # If we couldn't extract time or date is missing, fall back to uptime
+  if [[ -z "$start_time" || -z "$formatted_date" ]]; then
+    get_seconds_from_uptime
+    return
+  fi
+
+  # Build start epoch from the parsed date and time (macOS: date -j)
+  local start_epoch
+  start_epoch=$(date -j -f "%Y-%m-%d %H:%M" "$formatted_date $start_time" +%s 2>/dev/null)
+
+  # If parsing failed, fall back to uptime
+  if [[ -z "$start_epoch" ]]; then
+    get_seconds_from_uptime
+    return
+  fi
+
+  # Calculate seconds since start
+  local now_epoch
+  now_epoch=$(date +%s)
+  local seconds=$((now_epoch - start_epoch))
+
+  # Ensure non-negative result (in case of clock issues)
+  if [[ $seconds -lt 0 ]]; then
+    seconds=0
+  fi
+
+  echo "$seconds"
+}
