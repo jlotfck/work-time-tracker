@@ -19,6 +19,21 @@ You can then run it with:
 ./main.sh
 ```
 
+## Override the date range
+By default, the tracker starts with the current week's Monday and ends today. You can override either date by setting the `start` and/or `end` environment variable when running the script. Use the `YYYY-MM-DD` format:
+
+```sh
+start=2025-08-25 ./main.sh
+end=2025-08-30 ./main.sh
+start=2025-08-25 end=2025-08-30 ./main.sh
+```
+
+If you use the `wtt` alias, pass the variables the same way:
+
+```sh
+start=2025-08-25 end=2025-08-30 wtt
+```
+
 ## Optional: Create a handy alias in your zshrc
 To run the tracker from anywhere, add an alias to your `~/.zshrc`:
 

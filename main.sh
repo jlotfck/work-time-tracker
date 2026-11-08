@@ -8,13 +8,23 @@ source "$BASE_DIR/functions.sh"
 
 # ========== Main ==========
 main() {
+    # Get the date of the last Monday in the format YYYY-MM-DD
+    start_date=$(date -v Mon +%Y-%m-%d)
+    if [ -n "${start+x}" ]; then
+      start_date="$start"
+    fi
+
+    # Get the current date in the format YYYY-MM-DD
+    end_date=$(date +%Y-%m-%d)
+    if [ -n "${end+x}" ]; then
+      end_date="$end"
+    fi
+
     # Get the last 20 log entries for the user and filter by 'console'
     last_output=$(last -s -y -n 50 "$USER" | grep console)
-
-    # Get the date of the last Monday in the format YYYY-MM-DD
-    last_monday=$(date -v Mon +%Y-%m-%d)
-    # Get the current date in the format YYYY-MM-DD
-    current_date=$(date +%Y-%m-%d)
+    if [ -n "${start+x}" ] || [ -n "${end+x}" ]; then
+      last_output=$(last -s -y "$USER" | grep console)
+    fi
 
     # Initialize variables
     working_days=0
@@ -30,7 +40,7 @@ main() {
       formated_date=$(date -j -f "%d %b %Y" "$date" "+%Y-%m-%d")
 
       # Check if the formatted date is greater than or equal to the last Monday
-      if [[ "$formated_date" > "$last_monday" || "$formated_date" == "$last_monday" ]]; then
+      if [[ "$formated_date" > "$start_date" || "$formated_date" == "$start_date" ]]; then
         adjustment_value=0
         # Only add a working day when the entry is a different date
         if [[ "$last_date" != "$formated_date" ]]; then
@@ -43,6 +53,14 @@ main() {
 
         # Extract the seconds of the session from the line
         seconds=$(echo "$line" | awk -F '[()]' '{print $2+0}')
+        if [ "$seconds" -ge 86400 ]; then
+            extra_days=$(( seconds / 86400 ))
+            working_days=$(( working_days + extra_days ))
+            for (( i = 1; i <= extra_days; i++ )); do
+              day=$(date -j -v+"${i}d" -f "%Y-%m-%d" "$formated_date" "+%Y-%m-%d")
+              adjustment_value=$(( adjustment_value + $(getAdjustment "$day") ))
+            done
+        fi
 
         # If no session time is provided (seconds = 0), compute seconds since start time
         if [ "$seconds" -eq 0 ]; then
@@ -53,7 +71,7 @@ main() {
         seconds=$((seconds + $adjustment_value))
 
         # Update work time for today when the date is the current date
-        if [[ "$formated_date" == "$current_date" ]]; then
+        if [[ "$formated_date" == "$end_date" ]]; then
           work_time_today=$((seconds + work_time_today))
         fi
 
